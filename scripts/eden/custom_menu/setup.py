@@ -63,12 +63,11 @@ def _generate_menu_items(path, parent):
 
 def _generate_button(path, parent):
     file_base = os.path.basename(path).split(".py")[0]
+    label = file_base.title().replace("_", " ")
 
     mod_list = os.path.dirname(path).split(os.path.dirname(SCRIPTS_PATH))[-1].split('\\')[2:]
     mod_list.append(file_base)
     mod_path = ".".join(mod_list)
-
-    label = file_base.title().replace("_", " ")
 
     try:
         mod = __import__(mod_path, (), (), [file_base])
