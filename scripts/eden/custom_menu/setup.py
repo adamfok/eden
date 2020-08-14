@@ -3,7 +3,7 @@ Author : Adam Chun Wai Fok
 Date : Aug 2020
 
 Description : 
-    Custom Menu using os.walk()
+    Custom Menu using os.listdir()
     
 Note : 
     Script will walk through the custom menu path,
@@ -47,17 +47,16 @@ def install():
 
 
 def _generate_menu_items(path, parent):
-    for root, dirs, _ in os.walk(path):
-        for d in dirs:
-            new_parent = cmds.menuItem(d, parent=parent, subMenu=True, label=d.title())
-            new_path = os.path.join(root, d)
+    for d in os.listdir(path):
+        dir_path = os.path.join(path, d)
+        if os.path.isdir(dir_path):
+            new_parent = cmds.menuItem(parent=parent, subMenu=True, label=d.title())
+            _generate_menu_items(dir_path, new_parent)
 
-            _generate_menu_items(new_path, new_parent)
-
-            for f in os.listdir(os.path.join(root, d)):
-                if f.endswith('.py') and not f.startswith("_"):
-                    file_path = os.path.join(new_path, f)
-                    _generate_button(file_path, new_parent)
+    for f in os.listdir(path):
+        if f.endswith('.py') and not f.startswith("_"):
+            file_path = os.path.join(path, f)
+            _generate_button(file_path, parent)
     return
 
 
@@ -72,7 +71,7 @@ def _generate_button(path, parent):
     try:
         mod = __import__(mod_path, (), (), [file_base])
         reload(mod)
-
+        # print "created button %s" %path
         cmds.menuItem(parent=parent, label=label, command=mod.main)
 
     except Exception as e:
