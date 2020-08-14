@@ -11,7 +11,7 @@ def initializePlugin(plugin):
 
     om.MFnPlugin(plugin, vendor, version)
 
-    from eden.custom_menu import setup as custom_menu_setup
+    from eden.custom_menu import setup as custom_menu_setup ; reload(custom_menu_setup)
     custom_menu_setup.install()
 
     pass
