@@ -77,7 +77,7 @@ def createCommonGroup(nodes):
     return grp
 
 
-def createParentGroup(node, suffix="_offset"):
+def createParentGroup(node, suffix):
     parent = cmds.listRelatives(node, p=True)
 
     name = "{}{}".format(node, suffix)
