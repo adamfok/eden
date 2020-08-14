@@ -2,7 +2,7 @@ import maya.cmds as cmds
 
 
 def main(*args):
-    from eden.utils.mayaUtils import createCenterLocator
+    from eden.utils.mayaUtils import createCommonGroup
 
     selection = cmds.ls(sl=True)
     if not selection:
@@ -10,5 +10,5 @@ def main(*args):
         return
 
     else:
-        createCenterLocator(selection)
+        createCommonGroup(selection)
         return
