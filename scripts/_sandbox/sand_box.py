@@ -1,5 +1,5 @@
-import eden.utils.mayaUtils as mayaUtils ; reload(mayaUtils)
-import maya.cmds as cmds
-
-nodes = cmds.ls(sl=True)
-mayaUtils.createComponentLocator(nodes)
+import eden.tools.skinTools as st ; reload(st)
+import eden.tools.jointTools as jt ; reload(jt)
+import eden.tools.groupTools as gt ; reload(gt)
+import eden.tools.alignTools as a ; reload(a)
+import eden.utils.mayaUtils as mu ; reload(mu)

@@ -16,15 +16,16 @@ import maya.cmds as cmds
 import maya.mel as mel
 import os
 
+from eden.utils.loggerUtils import EdenLogger
+
 MENU_PATH = os.path.dirname(__file__)
 EDEN_PATH = os.path.dirname(MENU_PATH)
 SCRIPTS_PATH = os.path.dirname(EDEN_PATH)
 MENU_NAME = "eden_menu"
 MENU_LABEL = "Eden"
 
-
 def install():
-    print "Install Eden Custom Menu..."
+    EdenLogger.info("Install Eden Custom Menu...")
 
     # Create Menu
     gMainWindow = mel.eval('$temp1 = $gMainWindow')
@@ -70,17 +71,16 @@ def _generate_button(path, parent):
 
     try:
         mod = __import__(mod_path, (), (), [file_base])
-        reload(mod)
-        # print "created button %s" %path
+        EdenLogger.debug("Created Button {}".format(label))
         cmds.menuItem(parent=parent, label=label, command=mod.main)
 
     except Exception as e:
-        print ('\t%s Failed : %s' % (file_base.ljust(40, "-"), e))
+        EdenLogger.warning('\t%s Failed : \n\t\t\t%s' % (label, e))
         pass
 
 
 def uninstall():
-    print "Un-Install Eden Custom Menu..."
+    EdenLogger.info("Un-Install Eden Custom Menu...")
 
     if cmds.menu(MENU_NAME, exists=True):
         cmds.deleteUI(MENU_NAME)

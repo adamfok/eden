@@ -1,3 +1,3 @@
 def main(*args):
-    from eden.tools import hashRenamer
-    hashRenamer.hashRenamer()
+    from eden.tools.hashRenamer import hashRenamer
+    hashRenamer()

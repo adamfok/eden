@@ -4,11 +4,11 @@ from PySide2 import QtCore
 
 
 class Logger(object):
-    LOGGER_NAME = "Zurbrigg"
+    LOGGER_NAME = "Logger"
 
-    FORMAT_DEFAULT = "[%(name)s][%(levelname)s] %(message)s"
+    FORMAT_DEFAULT = "[%(name)s]\t [%(levelname)s]\t %(message)s"
 
-    LEVEL_DEFAULT = logging.DEBUG
+    LEVEL_DEFAULT = logging.INFO
     PROPAGATE_DEFAULT = True
 
     _logger_obj = None
@@ -96,10 +96,12 @@ class Logger(object):
 
 class MayaLogger(Logger):
     LOGGER_NAME = "MayaLogger"
-
-    FORMAT_DEFAULT = "[%(levelname)s][%(name)s] %(message)s"
-
     PROPAGATE_DEFAULT = False
+
+
+class EdenLogger(MayaLogger):
+    LOGGER_NAME = "Eden"
+    FORMAT_DEFAULT = "%(name)s:\t [%(levelname)s]\t %(message)s"
 
 
 class QtSignaler(QtCore.QObject):
@@ -118,14 +120,14 @@ class QtSignalHandler(logging.Handler):
 
 
 class QtLogger(MayaLogger):
-    LOGGER_NAME = "QtZurbrigg"
+    LOGGER_NAME = "QtLogger"
 
     _signal_handler = None
 
     @classmethod
     def logger_obj(cls):
         if not cls.logger_exists():
-            fmt = logging.Formatter("[%(levelname)s] %(message)s")
+            fmt = logging.Formatter("[%(levelname)s]\t %(message)s")
 
             cls._signal_handler = QtSignalHandler()
             cls._signal_handler.setFormatter(fmt)
@@ -139,4 +141,3 @@ class QtLogger(MayaLogger):
     def signal_handler(cls):
         cls.logger_obj()
         return cls._signal_handler
-

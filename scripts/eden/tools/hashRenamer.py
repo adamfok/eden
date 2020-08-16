@@ -1,11 +1,12 @@
 import maya.cmds as cmds
 from eden.utils.mayaUtils import hashRename
+from eden.utils.loggerUtils import EdenLogger
 
 
 def hashRenamer():
     selection = cmds.ls(sl=True)
     if not selection:
-        print "Nothing Selected"
+        EdenLogger.warning("Nothing Selected..")
         return
 
     result = cmds.promptDialog(

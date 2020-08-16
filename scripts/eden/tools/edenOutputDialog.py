@@ -4,6 +4,17 @@ from shiboken2 import wrapInstance
 import maya.OpenMayaUI as omui
 
 
+def install():
+    try:
+        window.close()  # pylint: disable=E0601
+        window.deleteLater()
+    except:
+        pass
+
+    window = EdenOutputDialog()
+    window.show()
+
+
 def maya_main_window():
     """
     Return the Maya main window widget as a Python object
@@ -12,12 +23,12 @@ def maya_main_window():
     return wrapInstance(long(main_window_ptr), QtWidgets.QWidget)
 
 
-class StandaloneWindow(QtWidgets.QDialog):
+class EdenOutputDialog(QtWidgets.QDialog):
 
     def __init__(self, parent=maya_main_window()):
-        super(StandaloneWindow, self).__init__(parent)
+        super(EdenOutputDialog, self).__init__(parent)
 
-        self.setWindowTitle("Standalone App")
+        self.setWindowTitle("Eden Output Window")
         self.setMinimumSize(400, 300)
         self.setWindowFlags(self.windowFlags() ^ QtCore.Qt.WindowContextHelpButtonHint)
 
@@ -45,14 +56,3 @@ class StandaloneWindow(QtWidgets.QDialog):
 
     def print_error(self):
         QtLogger.error("error message")
-
-
-if __name__ == "__main__":
-    try:
-        window.close()  # pylint: disable=E0601
-        window.deleteLater()
-    except:
-        pass
-
-    window = StandaloneWindow()
-    window.show()

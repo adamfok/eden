@@ -1,6 +1,9 @@
 import maya.cmds as cmds
+import maya.mel as mel
 import pymel.core as pm
 
+
+# TRANSFORM UTILS
 
 def getCenterPosition(nodes):
     c = cmds.cluster(nodes)
@@ -86,6 +89,112 @@ def createParentGroup(node, suffix):
     cmds.matchTransform(grp, node)
     cmds.parent(node, grp)
 
-    cmds.parent(grp, parent)
+    if parent:
+        cmds.parent(grp, parent)
 
     return grp
+
+
+def stackNodes(nodes):
+    for i in range(len(nodes) - 1):
+        cmds.parent(nodes[i + 1], nodes[i], a=True)
+    return
+
+
+# SKINNING UTILS
+
+def setMoveJointMode(toggle):
+    mel.eval("moveJointsMode {}".format(1 if toggle else 0))
+    return
+
+
+def copyVertexWeightToObject(vtx):
+    mel.eval('artAttrSkinWeightCopy')
+    cmds.select('%s.vtx[*]' % vtx.split(".vtx")[0])
+    mel.eval('artAttrSkinWeightPaste')
+    return
+
+
+def getSkinCluster(mesh):
+    return mel.eval('findRelatedSkinCluster("%s")' % mesh)
+
+
+def getSkinJoints(mesh):
+    skin = getSkinCluster(mesh)
+    return cmds.skinCluster(skin, query=True, inf=True)
+
+
+def copySkinCluster(src, dst, uv=False):
+    joints = getSkinJoints(src)
+    skin = cmds.skinCluster(joints, dst, tsb=True)
+    if uv:
+        cmds.copySkinWeights(src, dst, noMirror=True,
+                             uvSpace=['map1', 'map1'],
+                             surfaceAssociation='closestPoint',
+                             influenceAssociation='oneToOne')
+    else:
+        cmds.copySkinWeights(src, dst, noMirror=True,
+                             surfaceAssociation='closestPoint',
+                             influenceAssociation='oneToOne')
+    return skin
+
+
+def rebind(mesh):
+    skin = getSkinCluster(mesh)
+    cmds.setAttr("{}.envelope".format(skin), 0)
+
+    temp_geo = cmds.duplicate(mesh, name="temp_geo")[0]
+    copySkinCluster(mesh, temp_geo, uv=True)
+
+    cmds.delete(skin)
+
+    new_skin = copySkinCluster(temp_geo, mesh)
+
+    cmds.delete(temp_geo)
+
+    return new_skin
+
+
+def renameSkinCluster(mesh):
+    skin = getSkinCluster(mesh)
+    name = "{}_skinCluster".format(mesh)
+    cmds.rename(skin, name)
+    return name
+
+
+# MESH UTILS
+def deleteIntermediateShapes(mesh):
+    shapes = cmds.listRelatives(mesh, s=True)
+    for shape in shapes:
+        if cmds.getAttr("{}.intermediateObject".format(shape)):
+            cmds.delete(shape)
+        else:
+            cmds.rename(shape, "{}Shape".format(mesh))
+    return
+
+
+# JOINT UTILS
+def lockJointOrient(joint):
+    ro = cmds.xform(joint, ro=True, ws=True, q=True)
+
+    jointOrient = "{}.jointOrient".format(joint)
+    cmds.setAttr(jointOrient, 0, 0, 0)
+    cmds.setAttr(jointOrient, lock=True)
+
+    cmds.xform(joint, ro=ro, ws=True)
+    return
+
+
+def orientWorld(joint):
+    cmds.joint(joint, e=True, oj="none", ch=False, zso=True)
+    return
+
+
+# ALIGN UTILS
+def aimUpConstraint(target, base, up, upVector=[0, 1, 0], aimVector=[1, 0, 0]):
+    aimConst = cmds.aimConstraint(target, base,
+                                  worldUpType='object',
+                                  worldUpObject=up,
+                                  aimVector=aimVector,
+                                  upVector=upVector)
+    return aimConst
