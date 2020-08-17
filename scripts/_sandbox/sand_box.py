@@ -1,5 +1,5 @@
-import eden.tools.skinTools as st ; reload(st)
-import eden.tools.jointTools as jt ; reload(jt)
-import eden.tools.groupTools as gt ; reload(gt)
-import eden.tools.alignTools as a ; reload(a)
-import eden.utils.mayaUtils as mu ; reload(mu)
+import eden.core.curveShape as cs ; reload(cs)
+
+shape = cs.CurveShape("nurbsCircleShape1")
+shape.setShape(shape="root")
+
