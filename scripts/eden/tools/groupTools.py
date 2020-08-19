@@ -3,27 +3,13 @@ import eden.utils.mayaUtils as mayaUtils
 from eden.utils.loggerUtils import EdenLogger
 
 
-def createOffsetGroups():
-    selection = cmds.ls(sl=True)
-    if not selection:
-        EdenLogger.warning("Nothing Selected.. ")
-        return
-
-    grps = []
-    for node in selection:
-        grps.append(mayaUtils.createParentGroup(node, suffix="_offset"))
-    cmds.select(grps)
-    EdenLogger.debug("Offset Groups Created")
-    return
-
-
 def createCommonGroup():
     selection = cmds.ls(sl=True)
     if not selection:
-        EdenLogger.warning("Nothing Selected.. ")
-        return
+        grp = cmds.group(empty=True, name="null1")
+    else:
+        grp = mayaUtils.createCommonGroup(selection)
 
-    grp = mayaUtils.createCommonGroup(selection)
     cmds.select(grp)
     EdenLogger.debug("Common Group Created")
     return
@@ -37,3 +23,24 @@ def stackNodes():
 
     mayaUtils.stackNodes(selection)
     EdenLogger.debug("Stack Nodes")
+
+
+def parentGroupDialog():
+    selection = cmds.ls(sl=True)
+    if not selection:
+        EdenLogger.warning("Nothing Selected..")
+        return
+
+    result = cmds.promptDialog(
+        title="Parent Groups",
+        message='Enter Suffix:',
+        button=['OK', 'Cancel'],
+        defaultButton='OK',
+        cancelButton='Cancel',
+        dismissString='Cancel',
+        text="_offset")
+
+    if result == 'OK':
+        suffix = cmds.promptDialog(query=True, text=True)
+        for node in selection:
+            mayaUtils.createParentGroup(node, suffix=suffix)

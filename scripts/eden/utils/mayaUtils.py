@@ -3,7 +3,142 @@ import maya.mel as mel
 import pymel.core as pm
 
 
+# DELETE UTILS
+def deleteHistory(nodes):
+    cmds.select(nodes)
+    mel.eval("DeleteHistory")
+    cmds.select(clear=True)
+
+
+def deleteConstraints(nodes):
+    cmds.select(nodes)
+    mel.eval("DeleteConstraints")
+    cmds.select(clear=True)
+
+
+def deleteNonDeformerHistory(nodes):
+    cmds.select(nodes)
+    mel.eval("BakeNonDefHistory")
+    cmds.select(clear=True)
+
+
+def deleteIntermediateShapes(mesh):
+    shapes = cmds.listRelatives(mesh, s=True)
+    for shape in shapes:
+        if cmds.getAttr("{}.intermediateObject".format(shape)):
+            cmds.delete(shape)
+        else:
+            cmds.rename(shape, "{}Shape".format(mesh))
+    return
+
+
+# ATTRIBUTES UTILS
+
+def listAttrs(attr):
+    node, attrName = attr.split(".")
+    if not cmds.attributeQuery(attrName, node=node, exists=True):
+        return []
+
+    return ["{}.{}".format(node, longName) for longName in cmds.listAttr("{}.{}".format(node, attrName))]
+
+
+def listAttrsFromNodes(nodes, attrNames):
+    result = list()
+    for node in nodes:
+        for attrName in attrNames:
+            attr = "{}.{}".format(node, attrName)
+            result += listAttrs(attr)
+    return list(set(result))
+
+
+def getAttrDv(attr):
+    node, attrName = attr.split(".")
+    defaultValues = cmds.attributeQuery(attrName, node=node, listDefault=True)
+    return defaultValues[0] if len(defaultValues) == 1 else None
+
+
+def resetAttr(attr):
+    for fullAttr in listAttrs(attr):
+        dv = getAttrDv(fullAttr)
+        if dv is not None:
+            cmds.setAttr(fullAttr, dv)
+
+
+def showAttr(attr):
+    for fullAttr in listAttrs(attr):
+        cmds.setAttr(fullAttr, lock=False)
+        cmds.setAttr(fullAttr, channelBox=True)
+        cmds.setAttr(fullAttr, keyable=True)
+
+
+def hideAttr(attr):
+    for fullAttr in listAttrs(attr):
+        cmds.setAttr(fullAttr, keyable=False)
+        cmds.setAttr(fullAttr, lock=True)
+        cmds.setAttr(fullAttr, channelBox=False)
+
+
+def setAttrKeyable(attr, keyable):
+    if keyable:
+        [cmds.setAttr(fullAttr, keyable=True) for fullAttr in listAttrs(attr)]
+    else:
+        [cmds.setAttr(fullAttr, channelBox=True) for fullAttr in listAttrs(attr)]
+
+
+def hideTransformAttr(node):
+    for attr in "srt":
+        hideAttr("{}.{}".format(node, attr))
+
+
+def showTransformAttr(node):
+    for attr in "srt":
+        showAttr("{}.{}".format(node, attr))
+
+
+def resetTransformAttr(node):
+    for attr in "srt":
+        resetAttr("{}.{}".format(node, attr))
+
+
+def getSelectedMainAttributes():
+    nodeNames = cmds.channelBox("mainChannelBox", q=True, mol=True)
+    attrNames = cmds.channelBox("mainChannelBox", q=True, sma=True)
+    return listAttrsFromNodes(nodeNames, attrNames)
+
+
+def getSelectedInputAttributes():
+    nodeNames = cmds.channelBox("mainChannelBox", q=True, hol=True)
+    attrNames = cmds.channelBox("mainChannelBox", q=True, sha=True)
+    return listAttrsFromNodes(nodeNames, attrNames)
+
+
+def getSelectedShapesAttributes():
+    nodeNames = cmds.channelBox("mainChannelBox", q=True, sol=True)
+    attrNames = cmds.channelBox("mainChannelBox", q=True, ssa=True)
+    return listAttrsFromNodes(nodeNames, attrNames)
+
+
+def getSelectedAttributes():
+    mainAttrs = getSelectedMainAttributes()
+    inputAttrs = getSelectedInputAttributes()
+    shapeAttrs = getSelectedShapesAttributes()
+    return mainAttrs + inputAttrs + shapeAttrs
+
+
+def freezeTransform(node, t=True, r=True, s=True):
+    cmds.makeIdentity(node, apply=True, t=t, r=r, s=s)
+    return node
+
+
 # TRANSFORM UTILS
+def toggleHandles(node):
+    _hdl = cmds.getAttr("{}.displayHandle".format(node))
+    _laxis = cmds.getAttr("{}.displayLocalAxis".format(node))
+
+    toggle = not(_hdl and _laxis)
+    cmds.setAttr("{}.displayHandle".format(node), toggle)
+    cmds.setAttr("{}.displayLocalAxis".format(node), toggle)
+
 
 def getCenterPosition(nodes):
     c = cmds.cluster(nodes)
@@ -162,17 +297,6 @@ def renameSkinCluster(mesh):
     return name
 
 
-# MESH UTILS
-def deleteIntermediateShapes(mesh):
-    shapes = cmds.listRelatives(mesh, s=True)
-    for shape in shapes:
-        if cmds.getAttr("{}.intermediateObject".format(shape)):
-            cmds.delete(shape)
-        else:
-            cmds.rename(shape, "{}Shape".format(mesh))
-    return
-
-
 # JOINT UTILS
 def lockJointOrient(joint):
     ro = cmds.xform(joint, ro=True, ws=True, q=True)
@@ -198,3 +322,177 @@ def aimUpConstraint(target, base, up, upVector=[0, 1, 0], aimVector=[1, 0, 0]):
                                   aimVector=aimVector,
                                   upVector=upVector)
     return aimConst
+
+
+# SELECTIONS UTILS
+def selectByName(name):
+    cmds.select(cmds.ls(name))
+
+
+def filterSeletionByType(filterType):
+    isShapeType = filterType in ['mesh', 'follicle', 'nurbsCurve', "nurbsSurface", "locator", "cluster"]
+
+    if not isShapeType:
+        result = cmds.ls(sl=True, type=filterType)
+    else:
+        shapes = [cmds.listRelatives(node)[0] for node in cmds.ls(sl=True)]
+        result = [cmds.listRelatives(shape, p=True) for shape in cmds.ls(shapes, type=filterType)]
+
+    cmds.select(result)
+
+
+# DISPLAY UTILS
+def getCurrentPanel():
+    return cmds.getPanel(underPointer=True)
+
+
+def isIsolateSelection():
+    return cmds.isolateSelect(getCurrentPanel(), q=True, state=True)
+
+
+def isDisplayAll():
+    return isDisplayCurve() and isDisplayPolygon() and isDisplayJoint() and isDisplaySurface()
+
+
+def isDisplayCurve():
+    return cmds.modelEditor(getCurrentPanel(), q=True, nurbsCurves=True)
+
+
+def isDisplaySurface():
+    return cmds.modelEditor(getCurrentPanel(), q=True, nurbsSurfaces=True)
+
+
+def isDisplayPolygon():
+    return cmds.modelEditor(getCurrentPanel(), q=True, polymeshes=True)
+
+
+def isDisplayLocator():
+    return cmds.modelEditor(getCurrentPanel(), q=True, locators=True)
+
+
+def isDisplayDeformer():
+    return cmds.modelEditor(getCurrentPanel(), q=True, deformers=True)
+
+
+def isDisplayJoint():
+    return cmds.modelEditor(getCurrentPanel(), q=True, joints=True)
+
+
+def isDisplayHandle():
+    return cmds.modelEditor(getCurrentPanel(), q=True, handles=True)
+
+
+def isDisplayJointXRay():
+    return cmds.modelEditor(getCurrentPanel(), q=True, jointXray=True)
+
+
+def isDisplayTexture():
+    return cmds.modelEditor(getCurrentPanel(), q=True, displayTextures=True)
+
+
+def isDisplaySelectionHighlight():
+    return cmds.modelEditor(getCurrentPanel(), q=True, selectionHiliteDisplay=True)
+
+
+def toggleIsolateSelection():
+    currentPanel = getCurrentPanel()
+    toggle = not (isIsolateSelection())
+
+    cmds.isolateSelect(currentPanel, state=toggle)
+
+    if isIsolateSelection():
+        cmds.isolateSelect(currentPanel, removeSelected=True)
+    else:
+        cmds.isolateSelect(currentPanel, addSelected=True)
+
+
+def toggleDisplayAll():
+    toggle = not (isDisplayCurve() and isDisplayPolygon() and isDisplayJoint() and isDisplaySurface())
+    cmds.modelEditor(getCurrentPanel(), edit=True, allObjects=toggle)
+
+
+def toggleDisplayCurve():
+    cmds.modelEditor(getCurrentPanel(), edit=True, nurbsCurves=not (isDisplayCurve()))
+    cmds.modelEditor(getCurrentPanel(), edit=True, cv=not (isDisplayCurve()))
+
+
+def toggleDisplaySurface():
+    cmds.modelEditor(getCurrentPanel(), edit=True, nurbsSurfaces=not (isDisplaySurface()))
+
+
+def toggleDisplayPolygon():
+    cmds.modelEditor(getCurrentPanel(), edit=True, polymeshes=not (isDisplayPolygon()))
+
+
+def toggleDisplayLocator():
+    cmds.modelEditor(getCurrentPanel(), edit=True, locators=not (isDisplayLocator()))
+
+
+def toggleDisplayJoint():
+    cmds.modelEditor(getCurrentPanel(), edit=True, joints=not (isDisplayJoint()))
+
+
+def toggleDisplayDeformer():
+    cmds.modelEditor(getCurrentPanel(), edit=True, deformers=not (isDisplayDeformer()))
+
+
+def toggleDisplayJointXray():
+    cmds.modelEditor(getCurrentPanel(), edit=True, jointXray=not (isDisplayJointXRay()))
+
+
+def toggleDisplayTexture():
+    cmds.modelEditor(getCurrentPanel(), edit=True, displayTextures=not (isDisplayTexture()))
+
+
+def toggleDisplayHandle():
+    cmds.modelEditor(getCurrentPanel(), edit=True, handles=not (isDisplayHandle()))
+
+
+def toggleSelectHighlight():
+    cmds.modelEditor(getCurrentPanel(), edit=True, selectionHiliteDisplay=not (isDisplaySelectionHighlight()))
+
+
+def toggleDisplayWireframe():
+    currentPanel = getCurrentPanel()
+
+    if not cmds.modelEditor(currentPanel, q=True, displayAppearance=True) == "smoothShaded":
+        cmds.modelEditor(currentPanel, edit=True, displayAppearance='smoothShaded')
+
+    elif cmds.modelEditor(currentPanel, q=True, wireframeOnShaded=True):
+        cmds.modelEditor(currentPanel, edit=True, wireframeOnShaded=False)
+        cmds.modelEditor(currentPanel, edit=True, displayAppearance='wireframe')
+
+    else:
+        cmds.modelEditor(currentPanel, edit=True, wireframeOnShaded=True)
+
+
+def isDisplaySmooth():
+    return 3 in cmds.displaySmoothness(q=True, polygonObject=True)
+
+
+def toggleDisplaySmooth():
+    smoothness = 1 if isDisplaySmooth() else 3
+    cmds.displaySmoothness(polygonObject=smoothness)
+
+
+# FILES IO UTILS
+
+def tempFileExport(fileName):
+    path = "C:/TEMP/%s.ma" % fileName
+    cmds.file(path, es=True, f=True, type='mayaAscii')
+    print "file exported : %s" % path,
+    return
+
+
+def tempFileImport(fileName):
+    path = "C:/TEMP/%s.ma" % fileName
+    cmds.file(path, i=True, type="mayaAscii", ignoreVersion=True, mergeNamespacesOnClash=False, rpr=fileName, pr=True)
+    print "file imported : %s" % path,
+    return
+
+
+def tempFileReference(fileName):
+    path = "C:/TEMP/%s.ma" % fileName
+    cmds.file(path, r=True, type="mayaAscii", ignoreVersion=True, mergeNamespacesOnClash=False, rpr=fileName, pr=True)
+    print "file referenced : %s" % path,
+    return
