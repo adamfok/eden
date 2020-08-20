@@ -135,7 +135,7 @@ def toggleHandles(node):
     _hdl = cmds.getAttr("{}.displayHandle".format(node))
     _laxis = cmds.getAttr("{}.displayLocalAxis".format(node))
 
-    toggle = not(_hdl and _laxis)
+    toggle = not (_hdl and _laxis)
     cmds.setAttr("{}.displayHandle".format(node), toggle)
     cmds.setAttr("{}.displayLocalAxis".format(node), toggle)
 
@@ -394,6 +394,10 @@ def isDisplaySelectionHighlight():
     return cmds.modelEditor(getCurrentPanel(), q=True, selectionHiliteDisplay=True)
 
 
+def isDisplayController():
+    return cmds.modelEditor(getCurrentPanel(), q=True, controllers=True)
+
+
 def toggleIsolateSelection():
     currentPanel = getCurrentPanel()
     toggle = not (isIsolateSelection())
@@ -412,8 +416,9 @@ def toggleDisplayAll():
 
 
 def toggleDisplayCurve():
-    cmds.modelEditor(getCurrentPanel(), edit=True, nurbsCurves=not (isDisplayCurve()))
-    cmds.modelEditor(getCurrentPanel(), edit=True, cv=not (isDisplayCurve()))
+    toggle = not (isDisplayCurve())
+    cmds.modelEditor(getCurrentPanel(), edit=True, nurbsCurves=toggle)
+    cmds.modelEditor(getCurrentPanel(), edit=True, cv=toggle)
 
 
 def toggleDisplaySurface():
@@ -473,6 +478,14 @@ def isDisplaySmooth():
 def toggleDisplaySmooth():
     smoothness = 1 if isDisplaySmooth() else 3
     cmds.displaySmoothness(polygonObject=smoothness)
+
+
+def toggleDisplayController():
+    toggle = not (isDisplayController())
+    cmds.modelEditor(getCurrentPanel(), edit=True, nurbsCurves=toggle)
+    cmds.modelEditor(getCurrentPanel(), edit=True, cv=toggle)
+    cmds.modelEditor(getCurrentPanel(), edit=True, controllers=toggle)
+
 
 
 # FILES IO UTILS

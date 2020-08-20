@@ -64,9 +64,11 @@ def install():
     setHotkey(key="1", alt=True, name="toggleShowCurve", category=_cat, command=createCmd("toggleShowCurveCmd()"))
     setHotkey(key="2", alt=True, name="toggleShowSurface", category=_cat, command=createCmd("toggleShowSurfaceCmd()"))
     setHotkey(key="3", alt=True, name="toggleShowMesh", category=_cat, command=createCmd("toggleShowPolyCmd()"))
-    setHotkey(key="4", alt=True, name="toggleShowLocator", category=_cat, command=createCmd("toggleShowLocatorCmd()"))
+    setHotkey(key="4", alt=True, name="toggleShowController", category=_cat,
+              command=createCmd("toggleShowControlCmd()"))
     setHotkey(key="5", alt=True, name="toggleShowJoint", category=_cat, command=createCmd("toggleShowJointCmd()"))
     setHotkey(key="6", alt=True, name="toggleShowHandle", category=_cat, command=createCmd("toggleShowHandleCmd()"))
+    setHotkey(key="7", alt=True, name="toggleShowLocator", category=_cat, command=createCmd("toggleShowLocatorCmd()"))
 
     _cat = "Selection"
     setHotkey(key="`", name="SelectToggleMode", category=_cat)
@@ -78,7 +80,7 @@ def install():
     setHotkey(key="4", name="toggleShowWire", category=_cat, command=createCmd("toggleWireframeCmd()"))
     setHotkey(key="5", name="toggleShowJointXRay", category=_cat, command=createCmd("toggleJointXrayCmd()"))
     setHotkey(key="6", name="toggleShowTexture", category=_cat, command=createCmd("toggleShowTextureCmd()"))
-    setHotkey(key="9", name="toggleSelectHighlight", category=_cat, command=createCmd("toogleSelectionHighlightCmd()"))
+    setHotkey(key="9", name="toggleSelectHighlight", category=_cat, command=createCmd("toggleSelectionHighlightCmd()"))
     setHotkey(key="0", name="toggleShowSmooth", category=_cat, command=createCmd("toggleShowSmoothCmd()"))
 
     _cat = "Selection"
@@ -191,8 +193,12 @@ def toggleShowTextureCmd():
     mayaUtils.toggleDisplayTexture()
 
 
-def toogleSelectionHighlightCmd():
+def toggleSelectionHighlightCmd():
     mayaUtils.toggleSelectHighlight()
+
+
+def toggleShowControlCmd():
+    mayaUtils.toggleDisplayController()
 
 
 def createCommonGrpCmd():
