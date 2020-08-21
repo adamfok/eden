@@ -261,7 +261,7 @@ def getSkinJoints(mesh):
 
 def copySkinCluster(src, dst, uv=False):
     joints = getSkinJoints(src)
-    skin = cmds.skinCluster(joints, dst, tsb=True)
+    skin = cmds.skinCluster(joints, dst, tsb=True)[0]
     if uv:
         cmds.copySkinWeights(src, dst, noMirror=True,
                              uvSpace=['map1', 'map1'],
@@ -487,7 +487,6 @@ def toggleDisplayController():
     cmds.modelEditor(getCurrentPanel(), edit=True, controllers=toggle)
 
 
-
 # FILES IO UTILS
 
 def tempFileExport(fileName):
@@ -509,3 +508,70 @@ def tempFileReference(fileName):
     cmds.file(path, r=True, type="mayaAscii", ignoreVersion=True, mergeNamespacesOnClash=False, rpr=fileName, pr=True)
     print "file referenced : %s" % path,
     return
+
+
+# SKIN CLUSTER UTILS
+
+def getSkinClusterJointInfo(skinCluster):
+    """
+    Returns:
+        dict     [jointName(str) : jointIndex(int)]
+    """
+    result = dict()
+    _connections = cmds.listConnections("{}.matrix".format(skinCluster), type="joint", c=True)
+    names = _connections[1::2]
+    indexs = [int(s[s.find("[") + 1: s.find("]")]) for s in _connections[0::2]]
+
+    for name, index in zip(names, indexs):
+        result[name] = index
+    return result
+
+
+def getWeightListFromJoint(skinCluster, joint):
+    jointInfo = getSkinClusterJointInfo(skinCluster)
+    jointIndex = jointInfo[joint]
+    return cmds.getAttr("{}.wl[*].w[{}]".format(skinCluster, jointIndex))
+
+
+def getVtxPositionList(mesh):
+    positions = cmds.xform('%s.vtx[*]' % mesh, q=True, ws=True, t=True)
+    return [positions[i:i + 3] for i in range(0, len(positions), 3)]
+
+
+def applyWeightsByJoint(skinCluster, joint, weightList):
+    jointInfo = getSkinClusterJointInfo(skinCluster)
+    jointIndex = jointInfo[joint]
+
+    for vtx, w in enumerate(weightList):
+        if w == 0.0:
+            continue
+        pm.setAttr("{}.wl[{}].w[{}]".format(skinCluster, vtx, jointIndex), w)
+    return
+
+
+# DELTA MUSH TO SKIN CLUSTER CONVERTER
+def convertVtxDeltaToWeights(mesh):
+    joints = getSkinJoints(mesh)
+    baseVtxPositions = [xyz[1] for xyz in getVtxPositionList(mesh)]  # y pos poly
+
+    jointDeltaDict = dict()
+    for jnt in joints:
+        cmds.move(0, 1, 0, jnt, r=True, pcp=True)
+        pm.refresh()
+        targetVtxPositions = [xyz[1] for xyz in getVtxPositionList(mesh)]  # y pos only
+        cmds.move(0, -1, 0, jnt, r=True, pcp=True)
+
+        deltas = [target - base for base, target in zip(baseVtxPositions, targetVtxPositions)]
+        jointDeltaDict[jnt] = deltas
+
+    deleteHistory(mesh)
+    deleteIntermediateShapes(mesh)
+    skinCluster = cmds.skinCluster(joints, mesh, tsb=True)[0]
+    cmds.skinCluster(skinCluster, e=True, normalizeWeights=2)  # post
+    cmds.skinCluster(skinCluster, e=True, forceNormalizeWeights=True)
+
+    for jnt, deltas in jointDeltaDict.iteritems():
+        applyWeightsByJoint(skinCluster, jnt, deltas)
+    #
+    # cmds.skinCluster(skinCluster, e=True, normalizeWeights=1)  # interactive
+    # cmds.skinCluster(skinCluster, e=True, forceNormalizeWeights=True)

@@ -95,3 +95,14 @@ def renameSkinCluster():
     for sel in selection:
         name = mayaUtils.renameSkinCluster(sel)
         EdenLogger.info("Renamed {}'s SkinCluster to {}".format(sel, name))
+
+
+def flattenToWeights():
+    selection = cmds.ls(sl=True)
+    if not selection:
+        EdenLogger.warning("Nothing Selected.. ")
+        return
+
+    for sel in selection:
+        mayaUtils.convertVtxDeltaToWeights(sel)
+        EdenLogger.info("Flatten To SkinCluster : {}".format(sel))

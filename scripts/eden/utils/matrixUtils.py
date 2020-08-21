@@ -1,3 +1,6 @@
+import maya.cmds as cmds
+
+
 class MatrixUtils(object):
 
     @staticmethod
@@ -166,5 +169,3 @@ class MatrixUtils(object):
             for plug in plugs:
                 cmds.connectAttr(invMtx, plug, f=True)
                 print "Connected {} >> {}".format(invMtx, plug)
-
-
