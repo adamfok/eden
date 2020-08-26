@@ -10,7 +10,7 @@ def avgLocatorOnEdges():
         EdenLogger.warning("No Edges Selected..")
         return
 
-    curve, loc = mayaUtils.createAvgLocatorOnEdges(edges[0], pt=8, spans=8, degree=3)
+    curve, loc = mayaUtils.createAvgLocatorOnEdges(edges, pt=8, spans=8, degree=3)
 
     cmds.setAttr("{}.template".format(curve), 1)
     cmds.select(loc)
