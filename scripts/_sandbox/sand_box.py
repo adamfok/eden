@@ -1,9 +1,2 @@
-import eden.utils.mayaUtils as mayaUtils ; reload(mayaUtils)
-import eden.tools.follicleTools as follicleTools ; reload(follicleTools)
-import maya.cmds as cmds
-
-edges = mayaUtils.filterSelectionByComponent(componentType="edge")
-mayaUtils.rebuildPolyToCurve(edges)
-for vtx in verts:
-    print vtx
-    mayaUtils.createFollicleOnVert(vtx)
+import eden.utils.edenUtils as edenUtils
+reload(edenUtils)

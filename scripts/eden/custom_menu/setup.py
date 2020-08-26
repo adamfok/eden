@@ -17,12 +17,14 @@ import maya.mel as mel
 import os
 
 from eden.utils.loggerUtils import EdenLogger
+from eden.utils import edenUtils
 
 MENU_PATH = os.path.dirname(__file__)
-EDEN_PATH = os.path.dirname(MENU_PATH)
-SCRIPTS_PATH = os.path.dirname(EDEN_PATH)
+EDEN_PATH = edenUtils.EDEN_PATH
+SCRIPTS_PATH = edenUtils.SCRIPTS_PATH
 MENU_NAME = "eden_menu"
 MENU_LABEL = "Eden"
+
 
 def install():
     EdenLogger.info("Install Eden Custom Menu...")
@@ -34,6 +36,7 @@ def install():
         cmds.deleteUI(MENU_NAME)
 
     cmds.menu(MENU_NAME, parent=gMainWindow, label=MENU_LABEL, tearOff=True)
+    cmds.menuItem(parent=MENU_NAME, label="RELOAD EDEN", command=edenUtils.reloadModules)
 
     # Generate Label Dividers
     first_level_directories = [os.path.join(MENU_PATH, f) for f in os.listdir(MENU_PATH)]
@@ -57,26 +60,10 @@ def _generate_menu_items(path, parent):
     for f in os.listdir(path):
         if f.endswith('.py') and not f.startswith("_"):
             file_path = os.path.join(path, f)
-            _generate_button(file_path, parent)
+            command = _generate_command(file_path)
+            label = f.split(".py")[0].title().replace("_", " ")
+            cmds.menuItem(parent=parent, label=label, command=command)
     return
-
-
-def _generate_button(path, parent):
-    file_base = os.path.basename(path).split(".py")[0]
-    label = file_base.title().replace("_", " ")
-
-    mod_list = os.path.dirname(path).split(os.path.dirname(SCRIPTS_PATH))[-1].split('\\')[2:]
-    mod_list.append(file_base)
-    mod_path = ".".join(mod_list)
-
-    try:
-        mod = __import__(mod_path, (), (), [file_base])
-        EdenLogger.debug("Created Button {}".format(label))
-        cmds.menuItem(parent=parent, label=label, command=mod.main)
-
-    except Exception as e:
-        EdenLogger.warning('\t%s Failed : \n\t\t\t%s' % (label, e))
-        pass
 
 
 def uninstall():
@@ -86,3 +73,11 @@ def uninstall():
         cmds.deleteUI(MENU_NAME)
 
     return
+
+
+def _generate_command(file_path):
+    command = ""
+    module_path, module_name = edenUtils.getModPath(file_path)
+    command += "import {} as {}\n".format(module_path, module_name)
+    command += "{}.main()".format(module_name)
+    return command
