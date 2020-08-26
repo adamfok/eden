@@ -609,9 +609,11 @@ def convertVtxDeltaToWeights(mesh):
 
 # REVIT UTILS
 def rebuildPolyToCurve(edges, spans=8, degree=3):
-    curve, _ = cmds.polyToCurve(edges, form=2, degree=3, conformToSmoothMeshPreview=True)
+    cmds.select(edges) # cannot pass edges to cmds.polyToCurve as it only accept single edge entry
+    curve, _ = cmds.polyToCurve(form=2, degree=3, conformToSmoothMeshPreview=True)
     result, _ = cmds.rebuildCurve(curve, ch=True, rpo=1, rt=0, end=1, kr=0, kcp=0, kep=1, kt=0,
                                   s=spans, d=degree, tol=0.01)
+    cmds.select(clear=True)
     return result
 
 
