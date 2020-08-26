@@ -57,6 +57,10 @@ def getAttrDv(attr):
     return defaultValues[0] if len(defaultValues) == 1 else None
 
 
+def setAttrDv(attr, value):
+    cmds.addAttr(attr, e=True, dv=value)
+
+
 def resetAttr(attr):
     for fullAttr in listAttrs(attr):
         dv = getAttrDv(fullAttr)
@@ -76,6 +80,12 @@ def hideAttr(attr):
         cmds.setAttr(fullAttr, keyable=False)
         cmds.setAttr(fullAttr, lock=True)
         cmds.setAttr(fullAttr, channelBox=False)
+
+
+def lockAttr(attr):
+    for fullAttr in listAttrs(attr):
+        cmds.setAttr(fullAttr, lock=True)
+        cmds.setAttr(fullAttr, channelBox=True)
 
 
 def setAttrKeyable(attr, keyable):
@@ -341,6 +351,26 @@ def filterSeletionByType(filterType):
     cmds.select(result)
 
 
+def filterSelectionByComponent(componentType):
+    componetTypes = ["face", "edge", "vertex"]
+
+    if componentType not in componetTypes:
+        print "Invalid Component Type : %s, expect (%s)" % (componetType, componetTypes)
+        return
+
+    selection = cmds.ls(sl=True, type='float3')  # this is obscure maya way to get only components
+    if componentType == "face":
+        result = cmds.polyListComponentConversion(selection, ff=True, tf=True)
+
+    elif componentType == "edge":
+        result = cmds.polyListComponentConversion(selection, fe=True, te=True)
+
+    elif componentType == "vertex":
+        result = cmds.polyListComponentConversion(selection, fv=True, tv=True)
+
+    return result
+
+
 # DISPLAY UTILS
 def getCurrentPanel():
     return cmds.getPanel(underPointer=True)
@@ -575,3 +605,227 @@ def convertVtxDeltaToWeights(mesh):
     #
     # cmds.skinCluster(skinCluster, e=True, normalizeWeights=1)  # interactive
     # cmds.skinCluster(skinCluster, e=True, forceNormalizeWeights=True)
+
+
+# REVIT UTILS
+def rebuildPolyToCurve(edges, spans=8, degree=3):
+    curve, _ = cmds.polyToCurve(edges, form=2, degree=3, conformToSmoothMeshPreview=True)
+    result, _ = cmds.rebuildCurve(curve, ch=True, rpo=1, rt=0, end=1, kr=0, kcp=0, kep=1, kt=0,
+                                  s=spans, d=degree, tol=0.01)
+    return result
+
+
+def isCurveOpen(curve):
+    curveShape = cmds.listRelatives(curve, type="nurbsCurve")[0]
+    return cmds.getAttr("{}.form".format(curveShape)) == 0
+
+
+def createPointOnCuveInfos(curve, pt):
+    curveShape = cmds.listRelatives(curve, type="nurbsCurve")[0]
+
+    p = 0.00
+    p_inc = 1 / float(pt - 1) if isCurveOpen(curve) else 1 / float(pt)
+
+    result = list()
+    for i in range(pt):
+        ptOnCurve = cmds.createNode("pointOnCurveInfo", name="{}_ptOnCurve_{}".format(curve, i))
+        cmds.connectAttr("{}.worldSpace[0]".format(curveShape), "{}.inputCurve".format(ptOnCurve))
+        cmds.setAttr("{}.parameter".format(ptOnCurve), p)
+        p += p_inc
+
+        result.append(ptOnCurve)
+
+    return result
+
+
+def createAvgPointOnCurveLocator(curve, pt):
+    avg = cmds.createNode("plusMinusAverage", name="{}_avgPtOnCurve".format(curve))
+    cmds.setAttr("{}.operation".format(avg), 3)  # average
+
+    loc = cmds.spaceLocator(name="{}_avgLocator".format(curve))[0]
+    cmds.connectAttr("{}.output3D".format(avg), "{}.translate".format(loc))
+
+    ptOnCurves = createPointOnCuveInfos(curve, pt)
+    for i, ptOnCurve in enumerate(ptOnCurves):
+        cmds.connectAttr("{}.result.position".format(ptOnCurve), "{}.input3D[{}]".format(avg, i))
+
+    return loc
+
+
+def createAvgLocatorOnEdges(edges, pt, spans, degree):
+    curve = rebuildPolyToCurve(edges, spans=spans, degree=degree)
+    loc = createAvgPointOnCurveLocator(curve, pt=pt)
+
+    return curve, loc
+
+
+def createLocatorsOnCurve(curve, pt):
+    result = list()
+
+    ptOnCurves = createPointOnCuveInfos(curve=curve, pt=pt)
+    for poc in ptOnCurves:
+        loc = cmds.spaceLocator()[0]
+
+        fbf = cmds.createNode("fourByFourMatrix")
+        vp = cmds.createNode("vectorProduct")
+        dm = cmds.createNode("decomposeMatrix")
+
+        cmds.setAttr("{}.operation".format(vp), 2)
+
+        cmds.connectAttr("{}.normalizedNormal".format(poc), "{}.input1".format(vp))
+        cmds.connectAttr("{}.normalizedTangent".format(poc), "{}.input2".format(vp))
+
+        # popluate 4x4 matrix
+        cmds.connectAttr("{}.normalizedTangentX".format(poc), "{}.in00".format(fbf))
+        cmds.connectAttr("{}.normalizedTangentY".format(poc), "{}.in01".format(fbf))
+        cmds.connectAttr("{}.normalizedTangentZ".format(poc), "{}.in02".format(fbf))
+
+        cmds.connectAttr("{}.outputX".format(vp), "{}.in10".format(fbf))
+        cmds.connectAttr("{}.outputY".format(vp), "{}.in11".format(fbf))
+        cmds.connectAttr("{}.outputZ".format(vp), "{}.in12".format(fbf))
+
+        cmds.connectAttr("{}.normalizedNormalX".format(poc), "{}.in20".format(fbf))
+        cmds.connectAttr("{}.normalizedNormalY".format(poc), "{}.in21".format(fbf))
+        cmds.connectAttr("{}.normalizedNormalZ".format(poc), "{}.in22".format(fbf))
+
+        cmds.connectAttr("{}.positionX".format(poc), "{}.in30".format(fbf))
+        cmds.connectAttr("{}.positionY".format(poc), "{}.in31".format(fbf))
+        cmds.connectAttr("{}.positionZ".format(poc), "{}.in32".format(fbf))
+
+        # output
+        cmds.connectAttr("{}.output".format(fbf), "{}.inputMatrix".format(dm))
+
+        cmds.connectAttr("{}.outputTranslate".format(dm), "{}.translate".format(loc))
+        cmds.connectAttr("{}.outputRotate".format(dm), "{}.rotate".format(loc))
+        cmds.connectAttr("{}.outputScale".format(dm), "{}.scale".format(loc))
+
+        result.append(loc)
+
+    return result
+
+
+def getUVfromVertex(vtx):
+    return pm.PyNode(vtx).getUV()
+
+
+def isMesh(node):
+    return cmds.objectType(cmds.listRelatives(node)[0]) == "mesh"
+
+
+def isNurbs(node):
+    return cmds.objectType(cmds.listRelatives(node)[0]) == "nurbsSurface"
+
+
+def createFollicle(node, u=0.0, v=0.0):
+    shape = cmds.listRelatives(node)[0]
+
+    name = "{}_follicle_1".format(node)
+    follicle = cmds.createNode('follicle', name=name)
+    follicleXform = cmds.listRelatives(follicle, p=True)[0]
+
+    if isNurbs(node):
+        cmds.connectAttr("{}.local".format(shape), "{}.inputSurface".format(follicle))
+
+    if isMesh(node):
+        cmds.connectAttr("{}.outMesh".format(shape), "{}.inputMesh".format(follicle))
+
+    cmds.connectAttr("{}.worldMatrix[0]".format(node), "{}.inputWorldMatrix".format(follicle))
+    cmds.connectAttr("{}.outRotate".format(follicle), "{}.rotate".format(follicleXform))
+    cmds.connectAttr("{}.outTranslate".format(follicle), "{}.translate".format(follicleXform))
+
+    cmds.setAttr("{}.parameterU".format(follicle), u)
+    cmds.setAttr("{}.parameterV".format(follicle), v)
+
+    setAttrKeyable("{}.translate".format(follicleXform), False)
+    setAttrKeyable("{}.rotate".format(follicleXform), False)
+
+    return follicleXform
+
+
+def createFollicleOnVert(vtx):
+    node = vtx.split(".vtx")[0]
+    u, v = getUVfromVertex(vtx)
+    return createFollicle(node=node, u=u, v=v)
+
+
+def createClosestPointOnNode(node):
+    shape = cmds.listRelatives(node)[0]
+
+    if isNurbs(node):
+        closePointNode = cmds.createNode('closestPointOnSurface')
+        cmds.connectAttr("{}.worldSpace[0]".format(shape), "{}.inputSurface".format(closePointNode))
+
+    elif isMesh(node):
+        closePointNode = cmds.createNode('closestPointOnMesh')
+        cmds.connectAttr("{}.outMesh".format(shape), "{}.inMesh".format(closePointNode))
+
+    return closePointNode
+
+
+def getClosestPointUV(inPosition, node):
+    p0, p1, p2 = inPosition
+    closetPointNode = createClosestPointOnNode(node)
+    cmds.setAttr("{}.inPosition".format(closetPointNode), p0, p1, p2)
+
+    u = cmds.getAttr("{}.parameterU".format(closetPointNode))
+    v = cmds.getAttr("{}.parameterV".format(closetPointNode))
+
+    cmds.delete(closetPointNode)
+    return u, v
+
+
+def getClosestPoint(inPosition, node):
+    p0, p1, p2 = inPosition
+    closetPointNode = createClosestPointOnNode(node)
+    cmds.setAttr("{}.inPosition".format(closetPointNode), p0, p1, p2)
+
+    outPosition = cmds.getAttr("{}.position".format(closetPointNode))
+    cmds.delete(closetPointNode)
+    return outPosition
+
+
+def getClosestFace(inPosition, node):
+    if not isMesh(node):
+        print "{} Is Not Mesh Type".format(node)
+
+    p0, p1, p2 = inPosition
+    closetPointNode = createClosestPointOnNode(node)
+    cmds.setAttr("{}.inPosition".format(closetPointNode), p0, p1, p2)
+
+    closestFaceIndex = cmds.getAttr("{}.closestFaceIndex".format(closetPointNode))
+    cmds.delete(closetPointNode)
+    return closestFaceIndex
+
+
+def getClosestVertex(inPosition, node):
+    if not isMesh(node):
+        print "{} Is Not Mesh Type".format(node)
+
+    p0, p1, p2 = inPosition
+    closetPointNode = createClosestPointOnNode(node)
+    cmds.setAttr("{}.inPosition".format(closetPointNode), p0, p1, p2)
+
+    closestVertexIndex = cmds.getAttr("{}.closestVertexIndex".format(closetPointNode))
+    cmds.delete(closetPointNode)
+    return closestVertexIndex
+
+
+def closestFollicle(inLocator, node):
+    locatorShape = cmds.listRelatives(inLocator, type="locator")[0]
+
+    closetPointNode = createClosestPointOnNode(node)
+    cmds.connectAttr("{}.worldPosition[0]".format(locatorShape), "{}.inPosition".format(closetPointNode))
+
+    follicle = createFollicle(node, u=0.0, v=0.0)
+    follicleShape = cmds.listRelatives(follicle)[0]
+    cmds.connectAttr("{}.parameterU".format(closetPointNode), "{}.parameterU".format(follicleShape))
+    cmds.connectAttr("{}.parameterV".format(closetPointNode), "{}.parameterV".format(follicleShape))
+    return
+
+
+def revitObject(inObj, node):
+    position = cmds.xform(inObj, q=True, t=True, ws=True)
+    u, v = getClosestPointUV(position, node)
+    follicle = createFollicle(node, u=u, v=v)
+    cmds.parentConstraint(follicle, inObj, mo=True)
+    return
