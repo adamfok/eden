@@ -1,3 +1,3 @@
 def main(*args):
-    from eden.tools.groupTools import parentGroupDialog
+    from eden.maya_tools.groupTools import parentGroupDialog
     parentGroupDialog()

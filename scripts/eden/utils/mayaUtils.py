@@ -760,6 +760,7 @@ def createClosestPointOnNode(node):
     elif isMesh(node):
         closePointNode = cmds.createNode('closestPointOnMesh')
         cmds.connectAttr("{}.outMesh".format(shape), "{}.inMesh".format(closePointNode))
+        cmds.connectAttr("{}.worldMatrix[0]".format(shape), "{}.inputMatrix".format(closePointNode))
 
     return closePointNode
 

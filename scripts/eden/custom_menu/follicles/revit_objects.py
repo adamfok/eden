@@ -1,3 +1,3 @@
 def main(*args):
-    from eden.tools.follicleTools import revitObject
+    from eden.maya_tools.follicleTools import revitObject
     revitObject()

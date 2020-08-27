@@ -1,3 +1,3 @@
 def main(*args):
-    from eden.tools.animTools import deleteKeys
+    from eden.maya_tools.animTools import deleteKeys
     deleteKeys()

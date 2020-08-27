@@ -1,3 +1,3 @@
 def main(*args):
-    from eden.tools.groupTools import stackNodes
+    from eden.maya_tools.groupTools import stackNodes
     stackNodes()

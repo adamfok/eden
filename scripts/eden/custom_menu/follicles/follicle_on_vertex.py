@@ -1,3 +1,3 @@
 def main(*args):
-    from eden.tools.follicleTools import createFollicleOnVert
+    from eden.maya_tools.follicleTools import createFollicleOnVert
     createFollicleOnVert()

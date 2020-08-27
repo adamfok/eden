@@ -1,3 +1,3 @@
 def main(*args):
-    from eden.tools.softCluster import softCluster
+    from eden.maya_tools.softCluster import softCluster
     softCluster()

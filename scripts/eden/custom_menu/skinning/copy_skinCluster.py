@@ -1,3 +1,3 @@
 def main(*args):
-    from eden.tools.skinTools import copySkinCluster
+    from eden.maya_tools.skinTools import copySkinCluster
     copySkinCluster()

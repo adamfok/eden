@@ -1,3 +1,3 @@
 def main(*args):
-    from eden.tools.revitTools import avgLocatorOnEdges
+    from eden.maya_tools.revitTools import avgLocatorOnEdges
     avgLocatorOnEdges()

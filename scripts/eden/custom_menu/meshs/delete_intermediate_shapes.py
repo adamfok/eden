@@ -1,3 +1,3 @@
 def main(*args):
-    from eden.tools.meshTools import deleteIntermediateShapes
+    from eden.maya_tools.meshTools import deleteIntermediateShapes
     deleteIntermediateShapes()

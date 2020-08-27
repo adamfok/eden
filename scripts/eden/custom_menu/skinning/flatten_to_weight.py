@@ -1,3 +1,3 @@
 def main(*args):
-    from eden.tools.skinTools import flattenToWeights
+    from eden.maya_tools.skinTools import flattenToWeights
     flattenToWeights()

@@ -36,7 +36,7 @@ def install():
         cmds.deleteUI(MENU_NAME)
 
     cmds.menu(MENU_NAME, parent=gMainWindow, label=MENU_LABEL, tearOff=True)
-    cmds.menuItem(parent=MENU_NAME, label="RELOAD EDEN", command=edenUtils.reloadModules)
+    cmds.menuItem(parent=MENU_NAME, label="RELOAD", command=edenUtils.reloadModules)
 
     # Generate Label Dividers
     first_level_directories = [os.path.join(MENU_PATH, f) for f in os.listdir(MENU_PATH)]
@@ -78,6 +78,6 @@ def uninstall():
 def _generate_command(file_path):
     command = ""
     module_path, module_name = edenUtils.getModPath(file_path)
-    command += "import {} as {}\n".format(module_path, module_name)
+    command += "from {} import {}\n".format(module_path, module_name)
     command += "{}.main()".format(module_name)
     return command

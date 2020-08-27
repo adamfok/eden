@@ -1,3 +1,3 @@
 def main(*args):
-    from eden.tools.revitTools import locatorsOnCurve
+    from eden.maya_tools.revitTools import locatorsOnCurve
     locatorsOnCurve()

@@ -6,14 +6,13 @@ SCRIPTS_PATH = os.path.dirname(EDEN_PATH)
 
 RELOAD_DIRS = [os.path.join(EDEN_PATH, "core"),
                os.path.join(EDEN_PATH, "utils"),
-               os.path.join(EDEN_PATH, "tools")]
+               os.path.join(EDEN_PATH, "maya_tools")]
 
 
 def getModPath(filepath):
     module_name = os.path.basename(filepath).split(".py")[0]
-    _mod_list = os.path.dirname(filepath).split(os.path.dirname(SCRIPTS_PATH))[-1].split('\\')[2:]
-    _mod_list.append(module_name)
-    module_path = ".".join(_mod_list)
+    _module_path = os.path.dirname(filepath).split(os.path.dirname(SCRIPTS_PATH))[-1].split('\\')[2:]
+    module_path = ".".join(_module_path)
     return module_path, module_name
 
 
@@ -27,7 +26,7 @@ def reloadModules(*args):
                     module_path, module_name = getModPath(path)
 
                     try:
-                        mod = __import__(module_path, (), (), [module_name])
+                        mod = __import__("%s.%s" % (module_path, module_name), (), (), [module_name])
                         reload(mod)
 
                         print ("Reload {}".format(mod))

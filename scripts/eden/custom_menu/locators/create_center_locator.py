@@ -1,3 +1,3 @@
 def main(*args):
-    from eden.tools.locatorTools import createCenterLocator
+    from eden.maya_tools.locatorTools import createCenterLocator
     createCenterLocator()

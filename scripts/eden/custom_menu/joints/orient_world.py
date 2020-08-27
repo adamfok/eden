@@ -1,3 +1,3 @@
 def main(*args):
-    from eden.tools.jointTools import orientWorld
+    from eden.maya_tools.jointTools import orientWorld
     orientWorld()

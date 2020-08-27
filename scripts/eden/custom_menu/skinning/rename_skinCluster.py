@@ -1,3 +1,3 @@
 def main(*args):
-    from eden.tools.skinTools import renameSkinCluster
+    from eden.maya_tools.skinTools import renameSkinCluster
     renameSkinCluster()

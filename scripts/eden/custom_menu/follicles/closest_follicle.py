@@ -1,3 +1,3 @@
 def main(*args):
-    from eden.tools.follicleTools import closestFollicle
+    from eden.maya_tools.follicleTools import closestFollicle
     closestFollicle()
