@@ -24,7 +24,7 @@ def createFollicleOnVert():
 
     verts = mayaUtils.filterSelectionByComponent(componentType="vertex")
     for vtx in verts:
-        mayaUtils.createFollicleOnVert(vtx)
+        mayaUtils.createFollicleOnVert(vtx=vtx)
 
 
 def revitObject():

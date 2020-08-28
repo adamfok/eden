@@ -101,7 +101,8 @@ class MayaLogger(Logger):
 
 class EdenLogger(MayaLogger):
     LOGGER_NAME = "Eden"
-    FORMAT_DEFAULT = "%(name)s:\t [%(levelname)s]\t %(message)s"
+    # FORMAT_DEFAULT = "%(name)s:\t [%(levelname)s]\t %(message)s"
+    FORMAT_DEFAULT = "{:15}[{:10}]\t{}".format("%(name)s", "%(levelname)s", "%(message)s")
 
 
 class QtSignaler(QtCore.QObject):

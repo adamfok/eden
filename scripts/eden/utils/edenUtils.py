@@ -3,6 +3,7 @@ import os
 UTILS_PATH = os.path.dirname(__file__)
 EDEN_PATH = os.path.dirname(UTILS_PATH)
 SCRIPTS_PATH = os.path.dirname(EDEN_PATH)
+DATA_PATH = os.path.abspath(os.path.join(SCRIPTS_PATH, "..", "data"))
 
 RELOAD_DIRS = [os.path.join(EDEN_PATH, "core"),
                os.path.join(EDEN_PATH, "utils"),

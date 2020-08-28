@@ -1,5 +1,7 @@
 import maya.cmds as cmds
+import os
 import eden.utils.mayaUtils as mayaUtils
+import eden.utils.edenUtils as edenUtils
 from eden.utils.loggerUtils import EdenLogger
 
 
@@ -106,3 +108,48 @@ def flattenToWeights():
     for sel in selection:
         mayaUtils.convertVtxDeltaToWeights(sel)
         EdenLogger.info("Flatten To SkinCluster : {}".format(sel))
+
+
+def exportSkinXML():
+    selection = cmds.ls(sl=True)
+    if not selection:
+        EdenLogger.warning("Nothing Selected.. ")
+        return
+
+    dirPath = cmds.fileDialog2(fileMode=2, dialogStyle=2, dir=edenUtils.DATA_PATH)
+
+    if dirPath:
+        nodes = cmds.ls(sl=True)
+        mayaUtils.exportSkinXMLs(nodes, dirPath[0])
+
+
+def importSkinXML():
+    selection = cmds.ls(sl=True)
+    if not selection:
+        EdenLogger.warning("Nothing Selected.. ")
+        return
+
+    dirPath = cmds.fileDialog2(fileMode=2, dialogStyle=2, dir=edenUtils.DATA_PATH)
+
+    if dirPath:
+        nodes = cmds.ls(sl=True)
+        mayaUtils.importSkinXMLs(nodes, dirPath[0])
+    pass
+
+
+def replaceSkinXML():
+    selection = cmds.ls(sl=True)
+    if not len(selection) == 1:
+        EdenLogger.warning("Select One Object")
+        return
+
+    singleFilter = "XML (*.xml)"
+    xmlPath = cmds.fileDialog2(fileFilter=singleFilter, dialogStyle=2, fileMode=1)
+
+    if xmlPath:
+        node = selection[0]
+
+        if mayaUtils.isSkinned(node) is False:
+            mayaUtils.bindSkinXML(node=node, xmlPath=xmlPath)
+
+        mayaUtils.importSkinXML(node, xmlPath[0])

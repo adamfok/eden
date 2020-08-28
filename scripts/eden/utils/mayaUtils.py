@@ -1,6 +1,8 @@
 import maya.cmds as cmds
 import maya.mel as mel
 import pymel.core as pm
+import os
+import xml.etree.ElementTree as ET
 
 
 # DELETE UTILS
@@ -260,12 +262,12 @@ def copyVertexWeightToObject(vtx):
     return
 
 
-def getSkinCluster(mesh):
-    return mel.eval('findRelatedSkinCluster("%s")' % mesh)
+def getSkinCluster(node):
+    return mel.eval('findRelatedSkinCluster("%s")' % node)
 
 
-def getSkinJoints(mesh):
-    skin = getSkinCluster(mesh)
+def getSkinJoints(node):
+    skin = getSkinCluster(node)
     return cmds.skinCluster(skin, query=True, inf=True)
 
 
@@ -284,25 +286,25 @@ def copySkinCluster(src, dst, uv=False):
     return skin
 
 
-def rebind(mesh):
-    skin = getSkinCluster(mesh)
+def rebind(node):
+    skin = getSkinCluster(node)
     cmds.setAttr("{}.envelope".format(skin), 0)
 
-    temp_geo = cmds.duplicate(mesh, name="temp_geo")[0]
-    copySkinCluster(mesh, temp_geo, uv=True)
+    temp_geo = cmds.duplicate(node, name="temp_geo")[0]
+    copySkinCluster(node, temp_geo, uv=True)
 
     cmds.delete(skin)
 
-    new_skin = copySkinCluster(temp_geo, mesh)
+    new_skin = copySkinCluster(temp_geo, node)
 
     cmds.delete(temp_geo)
 
     return new_skin
 
 
-def renameSkinCluster(mesh):
-    skin = getSkinCluster(mesh)
-    name = "{}_skinCluster".format(mesh)
+def renameSkinCluster(node):
+    skin = getSkinCluster(node)
+    name = "{}_skinCluster".format(node)
     cmds.rename(skin, name)
     return name
 
@@ -542,6 +544,10 @@ def tempFileReference(fileName):
 
 # SKIN CLUSTER UTILS
 
+def isSkinned(node):
+    return getSkinCluster(node) != ""
+
+
 def getSkinClusterJointInfo(skinCluster):
     """
     Returns:
@@ -609,7 +615,7 @@ def convertVtxDeltaToWeights(mesh):
 
 # REVIT UTILS
 def rebuildPolyToCurve(edges, spans=8, degree=3):
-    cmds.select(edges) # cannot pass edges to cmds.polyToCurve as it only accept single edge entry
+    cmds.select(edges)  # cannot pass edges to cmds.polyToCurve as it only accept single edge entry
     curve, _ = cmds.polyToCurve(form=2, degree=3, conformToSmoothMeshPreview=True)
     result, _ = cmds.rebuildCurve(curve, ch=True, rpo=1, rt=0, end=1, kr=0, kcp=0, kep=1, kt=0,
                                   s=spans, d=degree, tol=0.01)
@@ -710,12 +716,16 @@ def getUVfromVertex(vtx):
     return pm.PyNode(vtx).getUV()
 
 
-def isMesh(node):
+def isMeshType(node):
     return cmds.objectType(cmds.listRelatives(node)[0]) == "mesh"
 
 
-def isNurbs(node):
+def isNurbsType(node):
     return cmds.objectType(cmds.listRelatives(node)[0]) == "nurbsSurface"
+
+
+def isCurveType(node):
+    return cmds.objectType(cmds.listRelatives(node)[0]) == "nurbsCurve"
 
 
 def createFollicle(node, u=0.0, v=0.0):
@@ -725,10 +735,10 @@ def createFollicle(node, u=0.0, v=0.0):
     follicle = cmds.createNode('follicle', name=name)
     follicleXform = cmds.listRelatives(follicle, p=True)[0]
 
-    if isNurbs(node):
+    if isNurbsType(node):
         cmds.connectAttr("{}.local".format(shape), "{}.inputSurface".format(follicle))
 
-    if isMesh(node):
+    if isMeshType(node):
         cmds.connectAttr("{}.outMesh".format(shape), "{}.inputMesh".format(follicle))
 
     cmds.connectAttr("{}.worldMatrix[0]".format(node), "{}.inputWorldMatrix".format(follicle))
@@ -753,11 +763,11 @@ def createFollicleOnVert(vtx):
 def createClosestPointOnNode(node):
     shape = cmds.listRelatives(node)[0]
 
-    if isNurbs(node):
+    if isNurbsType(node):
         closePointNode = cmds.createNode('closestPointOnSurface')
         cmds.connectAttr("{}.worldSpace[0]".format(shape), "{}.inputSurface".format(closePointNode))
 
-    elif isMesh(node):
+    elif isMeshType(node):
         closePointNode = cmds.createNode('closestPointOnMesh')
         cmds.connectAttr("{}.outMesh".format(shape), "{}.inMesh".format(closePointNode))
         cmds.connectAttr("{}.worldMatrix[0]".format(shape), "{}.inputMatrix".format(closePointNode))
@@ -787,30 +797,30 @@ def getClosestPoint(inPosition, node):
     return outPosition
 
 
-def getClosestFace(inPosition, node):
-    if not isMesh(node):
-        print "{} Is Not Mesh Type".format(node)
-
-    p0, p1, p2 = inPosition
-    closetPointNode = createClosestPointOnNode(node)
-    cmds.setAttr("{}.inPosition".format(closetPointNode), p0, p1, p2)
-
-    closestFaceIndex = cmds.getAttr("{}.closestFaceIndex".format(closetPointNode))
-    cmds.delete(closetPointNode)
-    return closestFaceIndex
-
-
-def getClosestVertex(inPosition, node):
-    if not isMesh(node):
-        print "{} Is Not Mesh Type".format(node)
-
-    p0, p1, p2 = inPosition
-    closetPointNode = createClosestPointOnNode(node)
-    cmds.setAttr("{}.inPosition".format(closetPointNode), p0, p1, p2)
-
-    closestVertexIndex = cmds.getAttr("{}.closestVertexIndex".format(closetPointNode))
-    cmds.delete(closetPointNode)
-    return closestVertexIndex
+# def getClosestFace(inPosition, node):
+#     if not isMeshType(node):
+#         print "{} Is Not Mesh Type".format(node)
+#
+#     p0, p1, p2 = inPosition
+#     closetPointNode = createClosestPointOnNode(node)
+#     cmds.setAttr("{}.inPosition".format(closetPointNode), p0, p1, p2)
+#
+#     closestFaceIndex = cmds.getAttr("{}.closestFaceIndex".format(closetPointNode))
+#     cmds.delete(closetPointNode)
+#     return closestFaceIndex
+#
+#
+# def getClosestVertex(inPosition, node):
+#     if not isMeshType(node):
+#         print "{} Is Not Mesh Type".format(node)
+#
+#     p0, p1, p2 = inPosition
+#     closetPointNode = createClosestPointOnNode(node)
+#     cmds.setAttr("{}.inPosition".format(closetPointNode), p0, p1, p2)
+#
+#     closestVertexIndex = cmds.getAttr("{}.closestVertexIndex".format(closetPointNode))
+#     cmds.delete(closetPointNode)
+#     return closestVertexIndex
 
 
 def closestFollicle(inLocator, node):
@@ -832,3 +842,79 @@ def revitObject(inObj, node):
     follicle = createFollicle(node, u=u, v=v)
     cmds.parentConstraint(follicle, inObj, mo=True)
     return
+
+
+def locatorPerCV(node):
+    curveShape = cmds.listRelatives(node, type="nurbsCurve")[0]
+
+    numCV = len(cmds.getAttr("{}.cp[*]".format(curveShape)))
+    locs = [cmds.spaceLocator(name="{}_cv{:02d}_loc".format(node, i))[0] for i in xrange(numCV)]
+
+    for i in xrange(numCV):
+        curveInfo = cmds.createNode("curveInfo", name="{}_cvInfo".format(node))
+        cmds.connectAttr("%s.worldSpace[0]" % curveShape, "%s.inputCurve" % curveInfo)
+
+        src_attr = "%s.controlPoints[%d]" % (curveInfo, i)
+        dst_attr = "%s.translate" % locs[i]
+        cmds.connectAttr(src_attr, dst_attr)
+
+    return locs
+
+
+# SKIN WEIGHT XML UTILS
+def exportSkinXML(node, xmlPath):
+    xmlFile = os.path.basename(xmlPath)
+    dirPath = os.path.dirname(xmlPath)
+
+    skin = getSkinCluster(node)
+    cmds.deformerWeights(xmlFile, export=True, deformer=skin, path=dirPath, vc=True)
+    return
+
+
+def exportSkinXMLs(nodes, dirPath):
+    for node in nodes:
+        xmlPath = os.path.join(dirPath, "%s.xml" % node.split(":")[-1])
+        exportSkinXML(node=node, xmlPath=xmlPath)
+    return
+
+
+def bindSkinXML(node, xmlPath):
+    joints = [jnt for jnt in getInfluencesFromSkinXML(xmlPath) if cmds.objExists(jnt) is True]
+    skin = cmds.skinCluster(joints, node, tsb=True)[0]
+    return skin
+
+
+def importSkinXML(node, xmlPath):
+    xmlFile = os.path.basename(xmlPath)
+    dirPath = os.path.dirname(xmlPath)
+
+    skin = getSkinCluster(node)
+
+    cmds.setAttr("%s.normalizeWeights" % skin, 0)
+    cmds.skinPercent(skin, node, pruneWeights=100, normalize=False)
+    cmds.deformerWeights(xmlFile, im=True, method="barycentric", deformer=skin, path=dirPath)
+    cmds.skinCluster(skin, e=True, forceNormalizeWeights=True)
+    cmds.setAttr("%s.normalizeWeights" % skin, 1)
+    return
+
+
+def importSkinXMLs(nodes, dirPath):
+    xmlPaths = [os.path.join(dirPath, "{}.xml".format(node)) for node in nodes]
+
+    for node, xmlPath in zip(nodes, xmlPaths):
+        if not os.path.exists(xmlPath):
+            print "{} Does Not Exists".format(xmlPath)
+            continue
+
+        if isSkinned(node) is False:
+            bindSkinXML(node=node, xmlPath=xmlPath)
+
+        importSkinXML(node=node, xmlPath=xmlPath)
+
+    return
+
+
+def getInfluencesFromSkinXML(xmlPath):
+    tree = ET.parse(xmlPath)
+    root = tree.getroot()
+    return [item.attrib["source"] for item in root.findall("weights")]

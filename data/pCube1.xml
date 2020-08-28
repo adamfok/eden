@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<deformerWeight>
+  <headerInfo fileName="D:/dev/eden-master/data/pCube1.xml" worldMatrix="1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 -1.109337 0.000000 0.000000 1.000000 "/>
+  <shape name="pCubeShape1" group="3" stride="3" size="8" max="8">
+    <point index="0" value=" -0.500000 -0.500000 0.500000"/>
+    <point index="1" value=" 0.500000 -0.500000 0.500000"/>
+    <point index="2" value=" -0.500000 0.500000 0.500000"/>
+    <point index="3" value=" 0.500000 0.500000 0.500000"/>
+    <point index="4" value=" -0.500000 0.500000 -0.500000"/>
+    <point index="5" value=" 0.500000 0.500000 -0.500000"/>
+    <point index="6" value=" -0.500000 -0.500000 -0.500000"/>
+    <point index="7" value=" 0.500000 -0.500000 -0.500000"/>
+  </shape>
+  <weights deformer="skinCluster2" source="joint2" shape="pCubeShape1" layer="0" defaultValue="0.000" size="8" max="7">
+    <point index="0" value="1.000"/>
+    <point index="1" value="1.000"/>
+    <point index="2" value="1.000"/>
+    <point index="3" value="1.000"/>
+    <point index="4" value="1.000"/>
+    <point index="5" value="1.000"/>
+    <point index="6" value="1.000"/>
+    <point index="7" value="1.000"/>
+  </weights>
+</deformerWeight>

@@ -37,5 +37,18 @@ def locatorsOnCurve():
 
         num = int(cmds.promptDialog(query=True, text=True))
         for sel in selection:
-            if cmds.listRelatives(sel, type="nurbsCurve"):
+            if not mayaUtils.isCurveType(sel):
+                EdenLogger.warning("%s Is Not Curve Type" % sel)
                 mayaUtils.createLocatorsOnCurve(curve=sel, pt=num)
+
+
+def locatorPerCV():
+    selection = cmds.ls(sl=True)
+    if not selection:
+        EdenLogger.warning("Nothing Selected.. ")
+        return
+
+    for sel in selection:
+        if mayaUtils.isCurveType(sel):
+            EdenLogger.warning("%s Is Not Curve Type" % sel)
+            mayaUtils.locatorPerCV(sel)
