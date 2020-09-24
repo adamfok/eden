@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 import eden.utils.mayaUtils as mayaUtils
-import eden.maya_tools.groupTools as groupTools
-import eden.maya_tools.hashRenamer as hashRenamer
+import eden.maya_tools.tools.groupTools as groupTools
+import eden.maya_tools.tools.hashRenamer as hashRenamer
 
 
 def isCommandExists(commandName):

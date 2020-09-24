@@ -716,16 +716,40 @@ def getUVfromVertex(vtx):
     return pm.PyNode(vtx).getUV()
 
 
-def isMeshType(node):
+def isMeshTransform(node):
     return cmds.objectType(cmds.listRelatives(node)[0]) == "mesh"
 
 
-def isNurbsType(node):
+def isNurbsTransform(node):
     return cmds.objectType(cmds.listRelatives(node)[0]) == "nurbsSurface"
 
 
-def isCurveType(node):
+def isCurveTransform(node):
     return cmds.objectType(cmds.listRelatives(node)[0]) == "nurbsCurve"
+
+
+def isLocatorTransform(node):
+    return cmds.objectType(cmds.listRelatives(node)[0]) == "locator"
+
+
+def isMesh(node):
+    return cmds.objectType(node) == "mesh"
+
+
+def isNurbs(node):
+    return cmds.objectType(node) == "nurbsSurface"
+
+
+def isCurve(node):
+    return cmds.objectType(node) == "nurbsCurve"
+
+
+def isLocator(node):
+    return cmds.objectType(node) == "locator"
+
+
+def isShape(node):
+    return isNurbs(node) or isMesh(node) or isCurve(node) or isLocator(node)
 
 
 def createFollicle(node, u=0.0, v=0.0):
@@ -735,10 +759,10 @@ def createFollicle(node, u=0.0, v=0.0):
     follicle = cmds.createNode('follicle', name=name)
     follicleXform = cmds.listRelatives(follicle, p=True)[0]
 
-    if isNurbsType(node):
+    if isNurbsTransform(node):
         cmds.connectAttr("{}.local".format(shape), "{}.inputSurface".format(follicle))
 
-    if isMeshType(node):
+    if isMeshTransform(node):
         cmds.connectAttr("{}.outMesh".format(shape), "{}.inputMesh".format(follicle))
 
     cmds.connectAttr("{}.worldMatrix[0]".format(node), "{}.inputWorldMatrix".format(follicle))
@@ -763,11 +787,11 @@ def createFollicleOnVert(vtx):
 def createClosestPointOnNode(node):
     shape = cmds.listRelatives(node)[0]
 
-    if isNurbsType(node):
+    if isNurbsTransform(node):
         closePointNode = cmds.createNode('closestPointOnSurface')
         cmds.connectAttr("{}.worldSpace[0]".format(shape), "{}.inputSurface".format(closePointNode))
 
-    elif isMeshType(node):
+    elif isMeshTransform(node):
         closePointNode = cmds.createNode('closestPointOnMesh')
         cmds.connectAttr("{}.outMesh".format(shape), "{}.inMesh".format(closePointNode))
         cmds.connectAttr("{}.worldMatrix[0]".format(shape), "{}.inputMatrix".format(closePointNode))
@@ -918,3 +942,7 @@ def getInfluencesFromSkinXML(xmlPath):
     tree = ET.parse(xmlPath)
     root = tree.getroot()
     return [item.attrib["source"] for item in root.findall("weights")]
+
+
+def getRelativeContainer(node):
+    return cmds.container(q=True, fc=node)
