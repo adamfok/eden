@@ -237,12 +237,6 @@ class RigComponent(Component):
                 cmds.rename(node, "{}_{}".format(self.prefix, node), ignoreShape=True)
         return
 
-    def _create_configs(self):
-        node = cmds.createNode("network", name="configs")
-        # cmds.connectAttr("{}.message".format(node), "{}.inputs".format(self.container))
-        self.addNodes(node)
-        return node
-
     def _create_inputs(self):
         """
         create inputs node for publish attributes,

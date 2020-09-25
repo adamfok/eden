@@ -1,4 +1,4 @@
-from eden.core.components import component;
+from eden.autoRig.components import component;
 import maya.cmds as cmds
 
 reload(component)

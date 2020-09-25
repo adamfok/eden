@@ -11,16 +11,10 @@ def initializePlugin(plugin):
 
     om.MFnPlugin(plugin, vendor, version)
 
-    import eden
+    import eden ; reload(eden)
     eden.install()
-
-
-    pass
 
 
 def uninitializePlugin(plugin):
     import eden
     eden.uninstall()
-
-
-    pass
