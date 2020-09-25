@@ -16,7 +16,6 @@ class Blueprints(object):
     def __init__(self, prefix):
         self.topBlueprints = self.getTopBlueprints()
         self.prefix = prefix
-        self.handles = list()
         self.guides = list()
 
     def build(self):

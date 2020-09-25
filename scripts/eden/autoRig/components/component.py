@@ -1,7 +1,11 @@
 import maya.cmds as cmds
+import os
 import importlib
+import eden
 
-COMPONENTS_PACKAGE_PATH = "eden.core.components"
+COMPONENTS_PATH = os.path.dirname(__file__)
+COMPONENTS_PACKAGE_PATH = ".".join(COMPONENTS_PATH.split(eden.SCRIPTS_PATH + "\\")[-1].split("\\"))
+# eden.autoRig.components
 
 
 class Container(object):
@@ -180,7 +184,6 @@ class RigComponent(Component):
             self._initializeAttributes()
             self._create_inputs()
             self._create_outputs()
-            self._create_configs()
 
         if prefix:
             self.setPrefix(prefix)
